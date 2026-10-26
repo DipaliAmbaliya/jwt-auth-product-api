@@ -1,0 +1,11 @@
+target/
+.idea/
+*.iml
+.vscode/
+*.log
+
+# Project exclude paths
+/express-frontend/node_modules/
+/express-frontend/node_modules/express/History.md
+/express-frontend/node_modules/express/LICENSE
+/express-frontend/node_modules/express/Readme.md

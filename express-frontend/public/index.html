@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auth Forms</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 420px; margin: 24px auto; padding: 0 16px; }
+    form { border: 1px solid #ccc; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+    h2 { margin: 0 0 12px; font-size: 18px; }
+    label { display: block; margin: 8px 0 2px; font-size: 14px; }
+    input, select, button { width: 100%; padding: 8px; box-sizing: border-box; font-size: 14px; }
+    button { margin-top: 12px; cursor: pointer; }
+    pre { background: #f4f4f4; padding: 8px; border-radius: 6px; white-space: pre-wrap; word-break: break-word; min-height: 20px; }
+  </style>
+</head>
+<body>
+
+  <form id="signup">
+    <h2>1. Sign up</h2>
+    <label>Username (8-50 chars)</label><input name="username" required>
+    <label>Email (must contain @ and _)</label><input name="email" required>
+    <label>Password (8-12, A-Z, a-z, 0-9, special)</label><input name="password" type="password" required>
+    <label>User type</label>
+    <select name="userType"><option>Standard User</option><option>Administrator</option></select>
+    <button type="submit">Sign up</button>
+    <pre class="out"></pre>
+  </form>
+
+  <form id="verify">
+    <h2>2. Verify OTP</h2>
+    <label>Email</label><input name="email" required>
+    <label>OTP (6 digits)</label><input name="otp" required pattern="\d{6}">
+    <button type="submit">Verify</button>
+    <pre class="out"></pre>
+  </form>
+
+  <form id="login">
+    <h2>3. Login</h2>
+    <label>Username</label><input name="username" required>
+    <label>Password</label><input name="password" type="password" required>
+    <button type="submit">Login</button>
+    <pre class="out"></pre>
+  </form>
+
+  <script>
+    async function post(url, data) {
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      const body = await res.json().catch(() => ({}));
+      return { res, body };
+    }
+    const show = (form, text) => form.querySelector('.out').textContent = text;
+    const formData = f => Object.fromEntries(new FormData(f));
+    const errText = b => b.errors ? Object.values(b.errors).join('\n') : (b.message || 'Request failed');
+
+    document.getElementById('signup').addEventListener('submit', async e => {
+      e.preventDefault();
+      const { res, body } = await post('/api/auth/signup', formData(e.target));
+      show(e.target, res.ok ? body.message + (body.otp ? '\nOTP (demo): ' + body.otp : '') : errText(body));
+    });
+
+    document.getElementById('verify').addEventListener('submit', async e => {
+      e.preventDefault();
+      const { res, body } = await post('/api/auth/verify-otp', formData(e.target));
+      show(e.target, res.ok ? body.message : errText(body));
+    });
+
+    document.getElementById('login').addEventListener('submit', async e => {
+      e.preventDefault();
+      const { res, body } = await post('/api/auth/login', formData(e.target));
+      if (!res.ok) return show(e.target, body.message || 'Login Failed');
+      // Successful login -> call the Dashboard endpoint with the JWT to show "Welcome <Username>"
+      const dash = await fetch('/api/dashboard', { headers: { Authorization: 'Bearer ' + body.token } });
+      show(e.target, (await dash.json()).message);
+    });
+  </script>
+</body>
+</html>
